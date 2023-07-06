@@ -1,0 +1,6 @@
+version: '3'
+
+services:
+  backend:
+    container_name: node-api-boilerplate-surreal-backend
+    command: npm run dev --prefix /nodeapp

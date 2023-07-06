@@ -1,0 +1,10 @@
+#V2
+SELECT * FROM time::now();
+SELECT * FROM $now;
+INFO
+INFO namespace;
+INFO namespaces;
+INFO kv;
+INFO FOR kv;
+exit
+INFO FOR kv;

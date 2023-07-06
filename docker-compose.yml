@@ -1,0 +1,78 @@
+version: '3'
+
+services:
+  backend:
+    container_name: node-api-boilerplate-surreal-backend
+    build: .
+    ports:
+      - ${API_PORT}:${API_PORT}
+    volumes:
+      - ./src:/nodeapp/src
+      - ./tests:/nodeapp/tests
+    environment:
+      - DB_HOST=database
+      - REDIS_HOST=redis
+      - REDIS_PORT=${REDIS_PORT}
+      - NODE_ENV=${NODE_ENV}
+    networks:
+      - network
+    depends_on:
+      - database
+  
+  database:
+    image: surrealdb/surrealdb:1.0.0-beta.9-20230402
+    container_name: node-api-boilerplate-surreal-database
+    command:
+      - start
+      - --log=trace
+      - --user=${DB_USER}
+      - --pass=${DB_PASSWORD}
+      - --bind=0.0.0.0:${DB_PORT}
+      - file:/data/db
+    ports:
+      - ${DB_PORT}:${DB_PORT}
+    volumes:
+      - ./db_data:/data/db
+    networks:
+      - network
+
+  redis:
+    container_name: node-api-boilerplate-surreal-redis
+    image: redis:7-alpine
+    volumes:
+      - ./redis_data:/data
+    ports:
+      - ${REDIS_PORT}:${REDIS_PORT}
+    networks:
+      - network
+    command: >
+      /bin/ash -c "
+        echo port ${REDIS_PORT} > /redis.conf
+        echo requirepass ${REDIS_PASSWORD} >> /redis.conf
+        redis-server /redis.conf
+      "
+  
+  migration:
+    container_name: node-api-boilerplate-surreal-migration
+    build:
+      context: ./
+      dockerfile: ./migrate.dockerfile
+    command: /bin/bash ./scripts/wait-migrate.sh database:${DB_PORT}
+    depends_on:
+      - database
+    environment:
+      - DB_HOST=database
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_URL=http://database:${DB_PORT}/rpc
+      - DB_NAMESPACE=${DB_NAMESPACE}
+    networks:
+      - network
+    volumes:
+      - ./migrations:/nodeapp/migrations
+
+networks:
+  network:
+    driver: bridge
