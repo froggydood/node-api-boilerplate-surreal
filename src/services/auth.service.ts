@@ -113,7 +113,6 @@ export const changePasswordHandler: Handler<ChangePasswordSchema> = async ({
 
 	const user = await updateUserPassword(tokenData?.userId, body.oldPassword, body.newPassword)
 	
-	
 	await invalidateAllRefreshTokens(user.id)
 	
 	const tokens = await createTokens({
