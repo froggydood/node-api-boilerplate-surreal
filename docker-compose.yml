@@ -24,10 +24,10 @@ services:
     container_name: node-api-boilerplate-surreal-database
     command:
       - start
-      - --log=trace
       - --user=${DB_USER}
       - --pass=${DB_PASSWORD}
       - --bind=0.0.0.0:${DB_PORT}
+      - --strict
       - file:/data/db
     ports:
       - ${DB_PORT}:${DB_PORT}

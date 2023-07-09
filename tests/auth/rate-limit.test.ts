@@ -2,7 +2,7 @@ import { AuthError } from "../../src/errors"
 import env from "../config/env"
 import { createTestUser } from "../data/api"
 import { createUser } from "../database/auth.database"
-import { apiBatchTest, expectError, login, wait } from "../helpers"
+import { APIHelpers, apiBatchTest, expectError, wait } from "../helpers"
 import { deleteAllUsersLike } from "../database/auth.database"
 
 const rateLimitUser = createTestUser({
@@ -28,7 +28,7 @@ describe("Refresh token", () => {
 	it("Should allow requests equal to the max requests", async () => {
 		const testIP = "TEST.IP.FOR.TESTING.1" + Date.now()
 		await apiBatchTest({
-			apiPromiseGetter: () => login(rateLimitUser.loginArgs, {headers: {"X-IP": testIP}}),
+			apiPromiseGetter: () => APIHelpers.login(rateLimitUser.loginArgs, {headers: {"X-IP": testIP}}),
 			errorCB: () => {throw "Request errored"},
 			numRequests: env.RATE_LIMIT_MAX
 		})
@@ -37,14 +37,14 @@ describe("Refresh token", () => {
 	it("Should allow requests equal to the max requests, within the given window time", async () => {
 		const testIP = "TEST.IP.FOR.TESTING.2" + Date.now()
 		await apiBatchTest({
-			apiPromiseGetter: () => login(rateLimitUser.loginArgs, {headers: {"X-IP": testIP}}),
+			apiPromiseGetter: () => APIHelpers.login(rateLimitUser.loginArgs, {headers: {"X-IP": testIP}}),
 			errorCB: () => {throw "Request errored"},
 			numRequests: env.RATE_LIMIT_MAX
 		})
 		await wait(env.RATE_LIMIT_WINDOW_MS + 100)
 
 		await apiBatchTest({
-			apiPromiseGetter: () => login(rateLimitUser.loginArgs, {headers: {"X-IP": testIP}}),
+			apiPromiseGetter: () => APIHelpers.login(rateLimitUser.loginArgs, {headers: {"X-IP": testIP}}),
 			errorCB: () => {throw "Request errored"},
 			numRequests: env.RATE_LIMIT_MAX
 		})
@@ -54,7 +54,7 @@ describe("Refresh token", () => {
 	it("Should disallow requests above the max requests", async () => {
 		const testIP = "TEST.IP.FOR.TESTING.3" + Date.now()
 		await apiBatchTest({
-			apiPromiseGetter: () => login(rateLimitUser.loginArgs, {headers: {"X-IP": testIP}}),
+			apiPromiseGetter: () => APIHelpers.login(rateLimitUser.loginArgs, {headers: {"X-IP": testIP}}),
 			successCB: (num, res) => {
 				if (num > env.RATE_LIMIT_MAX) {
 					throw "Request was successful after rate limit exceeded"

@@ -31,14 +31,34 @@ export const omit = <
 }
 
 export const filterUser = (user: DB.User): API.User => {
-	return pick(user, [
+	return filterIDObject(pick(user, [
 		"id", "userRole", "username", "firstName", "lastName", "email",
 		"joinedAt", "verified"
-	])
+	]))
 }
 
 export const filterOtherUser = (user: DB.User) => {
-	return pick(user, [
+	return filterIDObject(pick(user, [
 		"id", "username", "joinedAt", "verified"
-	])
+	]))
+}
+
+export const filterID = (id: string): string => {
+	if (!id.includes(":")) return id
+	id = id.split(":")[1]
+	id = id.replace(/[⟨⟩`]/g, "")
+	return id
+}
+
+export const formatID = <T extends string>(table: T, id: string): `${T}:${string}` => {
+	id = filterID(id)
+	if (/[-@:#.,]/.test(id)) id = `⟨${id}⟩`
+	return `${table}:${id}`
+}
+
+export const filterIDObject = <T extends {id: string}>(obj: T): T => {
+	return {
+		...obj,
+		id: filterID(obj.id)
+	}
 }

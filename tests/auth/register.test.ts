@@ -1,7 +1,7 @@
 import { AuthError, ValidationError } from "../../src/errors"
-import { tokensMatchData, createTestUser } from "../data/api"
-import { createUser, getUserById } from "../database/auth.database"
-import { apiDBSuccessTest, apiErrorTest, register } from "../helpers"
+import { tokensMatchData, createTestUser, userTokenMatchData } from "../data/api"
+import { createUser, getUserById, getUserTokens } from "../database/auth.database"
+import { APIHelpers, apiDBSuccessTest, apiErrorTest } from "../helpers"
 import { deleteAllUsersLike } from "../database/auth.database"
 
 const registerUser = createTestUser({
@@ -35,10 +35,15 @@ describe("Register", () => {
 	})
 	it("Successfully registers a user", async () => {
 		await apiDBSuccessTest({
-			apiPromise: register(registerUser.registerArgs),
+			apiPromise: APIHelpers.register(registerUser.registerArgs),
 			dbGetter: (data) => getUserById(data.user.id),
 			matchArgs: registerUser.matchArgs,
-			expectCB: (data) => expect(data.tokens).toMatchObject(tokensMatchData)
+			expectCB: async (data) => {
+				expect(data.tokens).toMatchObject(tokensMatchData)
+				const userVerificationTokens = await getUserTokens({userId: data.user.id, tokenType: "verification"})
+				expect(userVerificationTokens.length).toBe(1)
+				expect(userVerificationTokens[0]).toMatchObject(userTokenMatchData)
+			}
 		})
 	})
 
@@ -46,7 +51,7 @@ describe("Register", () => {
 		await createUser(registerUser.createArgs)
 
 		await apiErrorTest(
-			register(registerUserSameEmail.registerArgs),
+			APIHelpers.register(registerUserSameEmail.registerArgs),
 			AuthError.EmailAlreadyExists
 		)
 	})
@@ -55,35 +60,35 @@ describe("Register", () => {
 		await createUser(registerUser.createArgs)
 
 		await apiErrorTest(
-			register(registerUserSameUsername.registerArgs),
+			APIHelpers.register(registerUserSameUsername.registerArgs),
 			AuthError.UsernameAlreadyExists
 		)
 	})
 	
 	it("Errors when registering using invalid email", async () => {
 		await apiErrorTest(
-			register({...registerUser.registerArgs, email: "fer.sada@asdas"}),
+			APIHelpers.register({...registerUser.registerArgs, email: "fer.sada@asdas"}),
 			ValidationError.InvalidData
 		)
 	})
 
 	it("Errors when registering using too short username", async () => {
 		await apiErrorTest(
-			register({...registerUser.registerArgs, username: "fer"}),
+			APIHelpers.register({...registerUser.registerArgs, username: "fer"}),
 			ValidationError.InvalidData
 		)
 	})
 	
 	it("Errors when registering using too short password", async () => {
 		await apiErrorTest(
-			register({...registerUser.registerArgs, password: "1!av"}),
+			APIHelpers.register({...registerUser.registerArgs, password: "1!av"}),
 			ValidationError.InvalidData
 		)
 	})
 	
 	it("Errors when registering using too simple password", async () => {
 		await apiErrorTest(
-			register({...registerUser.registerArgs, password: "testing"}),
+			APIHelpers.register({...registerUser.registerArgs, password: "testing"}),
 			ValidationError.InvalidData
 		)
 	})

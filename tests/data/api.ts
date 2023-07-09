@@ -42,7 +42,13 @@ export const tokensMatchData = {
 	refresh: tokenMatchData
 }
 
-const isoTimeRegexp = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/
+const isoTimeRegexp = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d+Z$/
+
+export const userTokenMatchData = {
+	createdAt: isoTimeRegexp,
+	id: expect.any(String),
+	type: expect.any(String)
+}
 
 export const createTestUser = (
 	args: RegisterRequestSchema,

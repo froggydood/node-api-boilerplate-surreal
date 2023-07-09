@@ -1,6 +1,6 @@
 import { createTestUser } from "../data/api"
 import { createUser } from "../database/auth.database"
-import { apiAuthenticationTest, apiErrorTest, apiSuccessTest, updateApiUser } from "../helpers"
+import { APIHelpers, apiAuthenticationTest, apiErrorTest, apiSuccessTest } from "../helpers"
 import { AuthError } from "../../src/errors"
 import { createUserAccessToken } from "../helpers/token.helper"
 import { UpdateUserSchema } from "../../src/schema"
@@ -37,7 +37,7 @@ describe("Update user", () => {
 		}
 
 		await apiSuccessTest({
-			apiPromise: updateApiUser(user.userId, updateProps, token.token),
+			apiPromise: APIHelpers.updateUser(user.id, updateProps, token.token),
 			apiDataGetter: (res) => res.data,
 			matchArgs: {...updateUserUser.matchArgs, ...updateProps}
 		})
@@ -51,8 +51,8 @@ describe("Update user", () => {
 		}
 
 		await apiAuthenticationTest({
-			apiPromise: (token) => updateApiUser(user.userId, updateProps, token),
-			userId: user.userId,
+			apiPromise: (token) => APIHelpers.updateUser(user.id, updateProps, token),
+			userId: user.id,
 			userRole: user.userRole,
 			permissions: user.permissions
 		})
@@ -69,7 +69,7 @@ describe("Update user", () => {
 		}
 
 		await apiErrorTest(
-			updateApiUser(user1.userId, updateProps, token.token),
+			APIHelpers.updateUser(user1.id, updateProps, token.token),
 			AuthError.InvalidPermissions
 		)
 

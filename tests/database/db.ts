@@ -1,21 +1,19 @@
-import { SurrealDbHttpDialect, SurrealKysely } from "kysely-surrealdb"
-import { fetch } from "undici"
-
-import { DB } from "../../src/types"
+import Surreal from "surrealdb.js"
 import env from "../config/env"
+import redis from "../../src/redis/client"
 
-const db = new SurrealKysely<DB.DB>({
-	dialect: new SurrealDbHttpDialect({
-		database: env.DB_DATABASE,
-		fetch: (url, args) => {
-			if (url.startsWith("https://")) url = url.replace("https://", "http://")
-			return fetch(url, args)
-		},
-		hostname: `${env.DB_HOST}:${env.DB_PORT}`,
-		namespace: env.DB_NAMESPACE,
-		password: env.DB_PASSWORD,
-		username: env.DB_USER,
-	})
+const db = new Surreal(`http://${env.DB_HOST}:${env.DB_PORT}/rpc`, {
+	db: env.DB_DATABASE,
+	ns: env.DB_NAMESPACE,
+	auth: {
+		user: env.DB_USER,
+		pass: env.DB_PASSWORD,
+	}
 })
 
 export default db
+
+afterAll(async () => {
+	await db.close()
+	await redis.quit()
+})

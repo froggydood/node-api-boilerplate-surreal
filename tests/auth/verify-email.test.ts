@@ -1,8 +1,8 @@
 import authConfig from "../../src/config/auth.config"
 import { AuthError, DatabaseError } from "../../src/errors"
 import { createTestUser } from "../data/api"
-import { createUser, getUser } from "../database/auth.database"
-import { apiDBSuccessTest, apiErrorTest, verifyEmail } from "../helpers"
+import { createUser, createUserToken, getUser, verifyUser } from "../database/auth.database"
+import { APIHelpers, apiDBSuccessTest, apiErrorTest, filterID } from "../helpers"
 import { getDBDate } from "../helpers/date.helper"
 import { deleteAllUsersLike } from "../database/auth.database"
 
@@ -21,44 +21,44 @@ describe("Verify email", () => {
 	})
 
 	it("Successfully verifies user's email", async () => {
-		const token = "TOKEN"
-		await createUser({
-			...verifyEmailUser.createArgs,
-			verificationToken: token,
-			verificationTokenGeneratedAt: getDBDate()
+		const user = await createUser(verifyEmailUser.createArgs)
+		const verifyUserToken = await createUserToken({
+			type: "verification",
+			expiresAt: getDBDate(Date.now() + (authConfig.verificationTimeoutMins * 1000 * 60)),
+			userId: user.id,
 		})
 
 		await apiDBSuccessTest({
-			apiPromise: verifyEmail(token),
+			apiPromise: APIHelpers.verifyEmail(filterID(verifyUserToken.id)),
 			dbGetter: () => getUser("username", verifyEmailUser.registerArgs.username),
 			matchArgs: {verified: true}
 		})
 	})
 	
 	it("Errors with the incorrect token", async () => {
-		await createUser({
-			...verifyEmailUser.createArgs,
-			verificationToken: "TOKEN",
-			verificationTokenGeneratedAt: getDBDate()
+		const user = await createUser(verifyEmailUser.createArgs)
+		await createUserToken({
+			type: "verification",
+			expiresAt: getDBDate(Date.now() + (authConfig.verificationTimeoutMins * 1000 * 60)),
+			userId: user.id,
 		})
 
 		await apiErrorTest(
-			verifyEmail("WRONG_TOKEN"),
+			APIHelpers.verifyEmail("WRONG_TOKEN"),
 			DatabaseError.UserNotFound
 		)
 	})
 	
 	it("Errors with an expired token", async () => {
-		const genAt = getDBDate(new Date(Date.now() - (authConfig.verificationTimeoutMins * 1000 * 60)))
-
-		const user = await createUser({
-			...verifyEmailUser.createArgs,
-			verificationToken: "TOKEN",
-			verificationTokenGeneratedAt: genAt
-		})
+		const user = await createUser(verifyEmailUser.createArgs)
+		const verifyUserToken = await createUserToken({
+			type: "verification",
+			expiresAt: getDBDate(Date.now() - 1000 * 60 * 10),
+			userId: user.id,
+		})		
 
 		await apiErrorTest(
-			verifyEmail(user.verificationToken!),
+			APIHelpers.verifyEmail(filterID(verifyUserToken.id)),
 			AuthError.ExpiredVerificationToken
 		)
 	})

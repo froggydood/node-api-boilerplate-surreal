@@ -1,5 +1,5 @@
-import { createUser, getUser, getUserById, updateUser, updateUserById, updateUserPassword, verifyUser } from "../database/auth.database"
-import { getDBDate, isDateExpired } from "../helpers"
+import { createUserToken, createUser, getUser, getUserById, updateUserPassword, verifyUser, recreateUserToken, getUserAndTokenFromTokenId, deleteUserToken, updateUserById } from "../database/auth.database"
+import { filterID } from "../helpers"
 import {
 	CreateTokenArgs,
 	createTokens,
@@ -23,20 +23,19 @@ import {
 	ResetPasswordSchema
 } from "../schema"
 
-import nanoid from "nanoid"
 import authConfig from "../config/auth.config"
 import { API } from "../types"
 
 export const registerHandler: Handler<RegisterRequestSchema> = async ({
 	ctx, body
 }) => {
-	const userId = nanoid()
-	const verificationToken = nanoid()
-	const user = await createUser({
-		...body,
-		userId: userId,
-		verificationToken: verificationToken
+	const user = await createUser(body)
+	const verificationToken = await createUserToken({
+		type: "verification",
+		userId: user.id,
+		expiresAt: new Date(Date.now() + authConfig.verificationTimeoutMins * 60 * 1000)
 	})
+	console.log("CREATED VERIFICATION TOKEN", verificationToken)
 
 	const tokenNumber = await getUserTokenNumber(user.id)
 
@@ -54,7 +53,7 @@ export const registerHandler: Handler<RegisterRequestSchema> = async ({
 		tokens
 	}
 
-	sendVerificationEmail(user.email, verificationToken).catch(() => {
+	sendVerificationEmail(user.email, verificationToken.id).catch(() => {
 		console.log("Error sending verification email")
 	})
 }
@@ -134,20 +133,13 @@ export const sendVerificationEmailHandler: Handler = async ({
 }) => {
 	if (!tokenData?.userId) throw new HTTPError(DatabaseError.UserNotFound)
 
-	const verificationToken = nanoid()
-
 	const user = await getUserById(tokenData.userId)
 
 	if (user.verified) throw new HTTPError(AuthError.UserAlreadyVerified)
 
-	await updateUserById(
-		tokenData.userId, {
-			verificationToken: verificationToken,
-			verificationTokenGeneratedAt: getDBDate(Date.now())
-		}
-	)
+	const newToken = await recreateUserToken(tokenData.userId, {type: "verification"})
 
-	await sendVerificationEmail(user.email, verificationToken)
+	await sendVerificationEmail(user.email, filterID(newToken.id))
 
 	ctx.status = 204
 }
@@ -167,16 +159,10 @@ export const verifyEmailHandler: Handler = async ({
 export const forgotPasswordHandler: Handler<ForgotPasswordSchema> = async({
 	ctx, body
 }) => {
-	const forgotPasswordToken = nanoid()
-
-	await updateUser(
-		"email", body.email, {
-			passwordResetToken: forgotPasswordToken,
-			passwordResetTokenGeneratedAt: getDBDate(Date.now())
-		}
-	)
-
-	await sendForgotPasswordEmail(body.email, forgotPasswordToken)
+	const newToken = await recreateUserToken(body.email, {
+		type: "password_reset"
+	})
+	await sendForgotPasswordEmail(body.email, filterID(newToken.id))
 
 	ctx.status = 204
 }
@@ -186,14 +172,19 @@ export const resetPasswordHandler: Handler<ResetPasswordSchema> = async({
 }) => {
 	const newHash = await hash(body.newPassword)
 
-	const user = await getUser("passwordResetToken", body.token)
+	const { user, ...token } = await getUserAndTokenFromTokenId({
+		tokenId: body.token,
+		tokenType: "password_reset"
+	})
 
 	if (user.passwordHash === newHash) throw new HTTPError(AuthError.PasswordsAreTheSame)
-	if (!user.passwordResetTokenGeneratedAt || isDateExpired(user.passwordResetTokenGeneratedAt, authConfig.passwordResetTimeoutMins)) throw new HTTPError(AuthError.ExpiredPasswordRestToken)
+	if (token.expiresAt && Date.now() >= new Date(token.expiresAt).getTime()) throw new HTTPError(AuthError.ExpiredPasswordRestToken)
 
-	await updateUser("passwordResetToken", body.token, {
-		passwordHash: newHash, passwordResetTokenUsed: true
+	await updateUserById(user.id, {
+		passwordHash: newHash
 	})
+
+	await deleteUserToken(token.id)
 
 	ctx.status = 204
 }

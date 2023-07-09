@@ -25,7 +25,7 @@ export const getPermissions = (
 }
 
 export const createToken = async (args: API.TokenData, expiresInSecs: number): Promise<API.Token> => {
-	const expiresAt = ((Date.now() / 1000) + expiresInSecs) * 1000
+	const expiresAt = Date.now() + expiresInSecs * 1000
 		
 	const token = await new Promise((resolve, reject) => {
 		jwt.sign({
@@ -107,7 +107,7 @@ export const getTokenAndCheckPermissions = async (ctx: Application.Context, perm
 }
 
 export interface UserKVItem {
-	token_number: number
+	tokenNumber: number
 }
 
 export const getUserTokenNumber = async (userId: string): Promise<number> => {
@@ -116,7 +116,7 @@ export const getUserTokenNumber = async (userId: string): Promise<number> => {
 
 	try {
 		const userData = JSON.parse(userDataStr) as UserKVItem
-		return userData?.token_number
+		return userData?.tokenNumber
 	} catch(err) {
 		return 0
 	}
@@ -153,16 +153,16 @@ export const invalidateRefreshToken = async (token: string): Promise<void> => {
 export const invalidateAllRefreshTokens = async (userId: string): Promise<void> => {
 	const userDataStr = await redis.get(userId)
 	let newData: UserKVItem
-	if (!userDataStr) newData = {token_number: 1}
+	if (!userDataStr) newData = {tokenNumber: 1}
 	else {
 		try {
 			const userData = JSON.parse(userDataStr) as UserKVItem 
 			newData = {
 				...userData,
-				token_number: (userData.token_number || 0) + 1
+				tokenNumber: (userData.tokenNumber || 0) + 1
 			}
 		} catch {
-			newData = {token_number: 1}
+			newData = {tokenNumber: 1}
 		}
 	}
 

@@ -1,8 +1,9 @@
 import axios, { AxiosError, AxiosResponse } from "axios"
 import { AuthError } from "../../src/errors"
 import { API, DB } from "../../src/types"
-import { catchErrors, wait } from "./promise.helper"
-import { createToken, TokenData } from "./token.helper"
+import { wait } from "./promise.helper"
+import { createToken, catchErrors } from "../../src/helpers"
+import { TokenData } from "./token.helper"
 
 export const apiErrorTest = async <T>(
 	promise: Promise<AxiosResponse<T>>,
@@ -101,12 +102,14 @@ export const apiDBSuccessTest = async <T,D,M extends Record<string, any>>(args: 
 	expect(res.status).toBeGreaterThanOrEqual(200)
 	expect(res.status).toBeLessThan(400)
 
-	args.expectCB?.(res.data)
+	await args.expectCB?.(res.data)
 
 	const {
 		success: dbSuccess,
-		data: dbData
+		data: dbData,
+		error: dbError
 	} = await catchErrors(args.dbGetter(res.data))
+	if (dbError) console.error(dbError)
 
 	expect(dbSuccess).toEqual(true)
 
@@ -133,14 +136,14 @@ export const apiAuthenticationTest = async <T>(_args: {
 
 	const tokenArgs: TokenData = {
 		userId: args.userId,
-		user_role: args.userRole || "user",
+		userRole: args.userRole || "user",
 		permissions: args.permissions || [],
-		token_number: 0,
+		tokenNumber: 0,
 		type: "access"
 	}
 
-	const expiredToken = await createToken(tokenArgs, 100)
-	await wait(200)
+	const expiredToken = await createToken(tokenArgs, 5)
+	await wait(8000)
 	await apiErrorTest(args.apiPromise(expiredToken.token), AuthError.ExpiredAuthToken)
 	await args.afterAll?.()
 

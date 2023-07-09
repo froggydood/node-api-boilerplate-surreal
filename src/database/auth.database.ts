@@ -1,20 +1,25 @@
 import { hash } from "../helpers/compute.helper"
 import { DB } from "../types"
-import { isDateExpired } from "../helpers"
+import { formatID, isDateExpired } from "../helpers"
 import authConfig from "../config/auth.config"
 import { RegisterRequestSchema } from "../schema"
 import { HTTPError, AuthError, DatabaseError } from "../errors"
 import db from "./db"
+import { generateSetStatement, handleDBError, handleDBQuery } from "./sql.helper"
 
 export const updateUserById = async (
 	id: string,
 	updateData: Partial<DB.User>,
 ): Promise<DB.User> => {
-	const user = await db.updateTable(`user:${id}`)
-		.set(updateData)
-		.returningAll()
-		.executeTakeFirst()
-		.catch(() => {throw new HTTPError(DatabaseError.QueryError)})
+	const setStatement = generateSetStatement(updateData)
+	const users = await handleDBQuery<[DB.User[]], "first">(
+		db.query(`UPDATE $id SET ${setStatement.sql} RETURN after`, {
+			...setStatement.values,
+			id: formatID("user", id)
+		}),
+		"first"
+	)
+	const user = users[0]
 
 	if (!user) throw new HTTPError(DatabaseError.UserNotFound)
 	
@@ -26,13 +31,16 @@ export const updateUser = async <K extends keyof DB.User>(
 	filterValue: DB.User[K],
 	updateData: Partial<DB.User>,
 ): Promise<DB.User> => {
-	const user = await db.updateTable("user")
-		.where(filterKey, "=", filterValue as any)
-		.set(updateData)
-		.returningAll()
-		.executeTakeFirst()
-		.catch(() => {throw new HTTPError(DatabaseError.QueryError)})
+	const setStatement = generateSetStatement(updateData)
+	const users = await handleDBQuery<[DB.User[]], "first">(
+		db.query(`UPDATE user SET ${setStatement.sql} WHERE ${filterKey} = $filter RETURN after`, {
+			...setStatement.values,
+			filter: filterValue
+		}),
+		"first"
+	)
 
+	const user = users[0]
 	if (!user) throw new HTTPError(DatabaseError.UserNotFound)
 	
 	return user
@@ -41,11 +49,11 @@ export const updateUser = async <K extends keyof DB.User>(
 export const getUserById = async (
 	id: string
 ): Promise<DB.User> => {
-	const user = await db.selectFrom(`user:${id}`)
-		.selectAll()
-		.executeTakeFirst()
-		.catch(() => {throw new HTTPError(DatabaseError.QueryError)})
-
+	const users = await handleDBQuery<[DB.User[]], "first">(
+		db.query(`SELECT * FROM $id`, {id: formatID("user", id)}),
+		"first"
+	)
+	const user = users[0]
 	if (!user) throw new HTTPError(DatabaseError.UserNotFound)
 
 	return user
@@ -55,14 +63,12 @@ export const getUser = async <K extends keyof DB.User>(
 	filter: K,
 	filterValue: DB.User[K]
 ): Promise<DB.User> => {
-	const query = db.selectFrom("user")
-		.selectAll()
-		.where(filter, "=", filterValue as any)
+	const users = await handleDBQuery(
+		db.query<DB.User[]>(`SELECT * FROM user WHERE ${filter} = $filter`, {filter: filterValue}),
+		"first"
+	)
 
-	const user = await query
-		.executeTakeFirst()
-		.catch(() => {throw new HTTPError(DatabaseError.QueryError)})
-
+	const user = users[0]
 	if (!user) throw new HTTPError(DatabaseError.UserNotFound)
 
 	return user
@@ -76,34 +82,25 @@ export const updateUserPassword = async (
 	const oldHash = await hash(oldPassword)
 	const newHash = await hash(newPassword)
 
-	const newUser = await db.updateTable(`user:${userId}`)
-		.where("passwordHash", "=", oldHash)
-		.set({passwordHash: newHash})
-		.returningAll()
-		.executeTakeFirst()
-		.catch(() => {throw new HTTPError(DatabaseError.QueryError)})
-	
+	const newUsers = await handleDBQuery<[DB.User[]], "first">(
+		db.query(`UPDATE $id SET passwordHash=$newHash WHERE passwordHash=$oldHash RETURN AFTER`, {id: formatID("user", userId), newHash, oldHash}),
+		"first"
+	)
+	const newUser = newUsers[0]
 	if (!newUser) throw new HTTPError(AuthError.PasswordsDontMatch)
 
 	return newUser
 }
 
-export type CreateUserArgs = RegisterRequestSchema & {
-	userId: string
-}
-
-export const createUser = async (userArgs: CreateUserArgs & Partial<DB.User>): Promise<DB.User> => {
-	const existingUser = await db.selectFrom("user")
-		.select(["email", "username"])
-		.where(({or, cmpr}) => or([
-			cmpr("email", "=", userArgs.email),
-			cmpr("username", "=", userArgs.username),
-		]))
-		.executeTakeFirst()
-		.catch((err) => {
-			console.error(err)
-			throw new HTTPError(DatabaseError.QueryError)
-		})
+export const createUser = async (userArgs: RegisterRequestSchema & Partial<DB.User>): Promise<DB.User> => {
+	const existingUsers = await handleDBQuery<[DB.User[]], "first">(
+		db.query(`SELECT email, username FROM user WHERE email = $email OR username = $username`, {
+			email: userArgs.email,
+			username: userArgs.username
+		}),
+		"first"
+	)
+	const existingUser = existingUsers[0]
 
 	if (existingUser) {
 		if (existingUser.email === userArgs.email) throw new HTTPError(AuthError.EmailAlreadyExists)
@@ -111,46 +108,38 @@ export const createUser = async (userArgs: CreateUserArgs & Partial<DB.User>): P
 	}
 
 	const passwordHash = await hash(userArgs.password)
+	
+	const setStatement = generateSetStatement({
+		email: userArgs.email,
+		firstName: userArgs.firstName,
+		lastName: userArgs.lastName,
+		passwordHash,
+		username: userArgs.username,
+	})
+	const users = await handleDBQuery<[DB.User[]], "first">(
+		db.query(`CREATE user SET ${setStatement.sql} RETURN after`, setStatement.values),
+		"first"
+	)
+	const user = users[0]
+	if (!user) throw new HTTPError(DatabaseError.UserNotFound)
 
-	const user = await db.create("user")
-		.set({
-			id: userArgs.userId,
-			email: userArgs.email,
-			firstName: userArgs.firstName,
-			lastName: userArgs.lastName,
-			passwordHash,
-			username: userArgs.username,
-			verificationToken: userArgs.verificationToken,
-			verificationTokenGeneratedAt: userArgs.verificationTokenGeneratedAt,
-			passwordResetToken: userArgs.passwordResetToken,
-			passwordResetTokenGeneratedAt: userArgs.passwordResetTokenGeneratedAt
-		})
-		.return("after")
-		.executeTakeFirstOrThrow()
-		.catch((err) => {
-			console.error(err)
-			throw new HTTPError(DatabaseError.QueryError)
-		})
-
-	return user as unknown as DB.User
+	return user
 }
 
-export const verifyUser = async (token: string): Promise<DB.User> => {
-	const user = await db.selectFrom("user")
-		.select(["verified", "id", "verificationTokenGeneratedAt"])
-		.where("verificationToken", "=", token)
-		.executeTakeFirst()
+export const verifyUser = async (tokenStr: string): Promise<DB.User> => {
+	const res = await handleDBQuery<[(DB.UserToken & {user: DB.User})[]], "first">(
+		db.query(
+			`SELECT (<-hasToken.in)[0].* as user, * FROM $veriToken WHERE type="verification";`, {veriToken: formatID("userToken", tokenStr)}
+		), "first"
+	)
 
-	if (!user) throw new HTTPError(DatabaseError.UserNotFound)
+	if (!res[0]) throw new HTTPError(DatabaseError.UserNotFound)
+	const { user, ...token } = res[0]
 	
-	if (!user.verificationTokenGeneratedAt || isDateExpired(user.verificationTokenGeneratedAt, authConfig.verificationTimeoutMins)) throw new HTTPError(AuthError.ExpiredVerificationToken)
+	if (token.expiresAt && Date.now() >= new Date(token.expiresAt).getTime()) throw new HTTPError(AuthError.ExpiredVerificationToken)
 	if (user.verified) throw new HTTPError(AuthError.UserAlreadyVerified)
 
-	const newUser = await db.updateTable(`user:${user.id}`)
-		.set({verified: true})
-		.returningAll()
-		.executeTakeFirst()
-
+	const newUser = await updateUserById(user.id, {verified: true})
 	if (!newUser) {throw new HTTPError(DatabaseError.UserNotFound)}
 
 	return newUser
@@ -159,8 +148,110 @@ export const verifyUser = async (token: string): Promise<DB.User> => {
 export const deleteUserById = async (
 	id: string
 ): Promise<void> => {
-	const res = await db.deleteFrom(`user:${id}`)
-		.executeTakeFirst()
+	const res = await db.delete(formatID("user", id))
+		.catch(handleDBError())
+	if (res.length === 0) {throw new HTTPError(DatabaseError.UserNotFound)}
+}
 
-	if (res.numDeletedRows === 0n) {throw new HTTPError(DatabaseError.UserNotFound)}
+export const createUserToken = async (
+	args: {type: DB.TokenType, userId: string, expiresAt: Date}
+): Promise<DB.UserToken> => {
+	console.log("USER ID", args.userId)
+	const res = await handleDBQuery<[null, DB.HasToken, DB.UserToken[]], "last">(
+		db.query(`
+			BEGIN TRANSACTION;
+
+			LET $newToken = CREATE userToken:uuid() SET type=$tokenType ${args.expiresAt ? ", expiresAt=$expiresAt" : ""} RETURN after;
+
+			RELATE $userId->hasToken->($newToken.id);
+
+			SELECT * FROM $newToken;
+
+			COMMIT TRANSACTION;
+		`, {
+			tokenType: args.type,
+			userId: formatID("user", args.userId),
+			expiresAt: args.expiresAt
+		}),
+		"last"
+	)
+	const token = res[0]
+	if (!token) throw new HTTPError(DatabaseError.QueryError)
+	return token
+}
+
+export const deleteUserToken = async (id: string): Promise<void> => {
+	const res = await db.delete(formatID("userToken", id))
+	if (res.length === 0) throw new HTTPError(DatabaseError.NotFound)
+}
+
+export const recreateUserToken = async (userId: string, args: {type: DB.TokenType}): Promise<DB.UserToken> => {
+	const res = await handleDBQuery<[null, null, DB.HasToken, DB.UserToken], "last">(
+		db.query(`
+			BEGIN TRANSACTION;
+
+			DELETE FROM userToken WHERE (<-hasToken.in)[0] = $userId AND type=$tokenType);
+			
+			LET $newToken = CREATE userToken:uuid() SET type=$tokenType RETURN after;
+			
+			RELATE $userId->hasToken->($newToken.id);
+			
+			SELECT * FROM $newToken;
+			
+			COMMIT TRANSACTION;
+		`, {
+			tokenType: args.type,
+			userId: formatID("user", userId),
+		}),
+		"last"
+	)
+	const token = res[0]
+	if (!token) throw new HTTPError(DatabaseError.QueryError)
+	console.log("TOKEN", token)
+	return token
+}
+
+export const recreateUserTokenFromEmail = async (email: string, args: {type: DB.TokenType}): Promise<DB.UserToken> => {
+	const res = await handleDBQuery<[null, null, null, DB.HasToken, DB.UserToken], "last">(
+		db.query(`
+			BEGIN TRANSACTION;
+
+			LET $user = SELECT * FROM user WHERE email=$email;
+
+			DELETE FROM userToken WHERE (<-hasToken.in)[0].email = $email AND type=$tokenType);
+			
+			LET $newToken = CREATE userToken:uuid() SET type=$tokenType RETURN after;
+			
+			RELATE ($user.id)->hasToken->($newToken.id);
+			
+			SELECT * FROM $newToken;
+			
+			COMMIT TRANSACTION;
+		`, {
+			tokenType: args.type,
+			email,
+		}),
+		"last"
+	)
+
+	const token = res[0]
+	if (!token) throw new HTTPError(DatabaseError.QueryError)
+	return token
+}
+
+export const getUserAndTokenFromTokenId = async (args: {
+	tokenId: string,
+	tokenType: DB.TokenType,
+}): Promise<{user: DB.User} & DB.UserToken> => {
+	const res = await handleDBQuery<[({user: DB.User} & DB.UserToken)[]], "first">(
+		db.query(`
+			SELECT (<-hasToken.in)[0].* as user, * FROM $tokenId WHERE type = $tokenType;
+		`, {
+			tokenType: args.tokenType,
+			tokenId: formatID("userToken", args.tokenId),
+		}), "first"
+	)
+	const item = res[0]
+	if (!item) throw new HTTPError(DatabaseError.UserNotFound)
+	return item
 }

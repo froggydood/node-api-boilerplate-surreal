@@ -1,6 +1,6 @@
 import { createTestUser, tokensMatchData } from "../data/api"
 import { createUser } from "../database/auth.database"
-import { apiErrorTest, apiSuccessTest, login } from "../helpers"
+import { APIHelpers, apiErrorTest, apiSuccessTest } from "../helpers"
 import { AuthError } from "../../src/errors"
 import { deleteAllUsersLike } from "../database/auth.database"
   
@@ -22,7 +22,7 @@ describe("Login", () => {
 		await createUser(loginUser.createArgs)
 
 		const res = await apiSuccessTest({
-			apiPromise: login(loginUser.loginArgs),
+			apiPromise: APIHelpers.login(loginUser.loginArgs),
 			apiDataGetter: (res) => res.data.user,
 			matchArgs: loginUser.matchArgs
 		})
@@ -33,7 +33,7 @@ describe("Login", () => {
 		await createUser(loginUser.createArgs)
 
 		await apiErrorTest(
-			login({...loginUser.loginArgs, password: "wrong_password"}),
+			APIHelpers.login({...loginUser.loginArgs, password: "wrong_password"}),
 			AuthError.IncorrectUsernamePasswordCombo
 		)
 	})

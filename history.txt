@@ -8,3 +8,17 @@ INFO kv;
 INFO FOR kv;
 exit
 INFO FOR kv;
+SELECT * FROM true;
+SELECT * FROM user;
+use boilerplate
+use NS boilerplate DATABASE boilerplate
+SELECT * FROM user;
+SELECT * FROM user WHERE username LIKE "%FROG%";
+SELECT * FROM user WHERE username LIKE "FROG";
+SELECT * FROM user WHERE username = /.*frog.*/;
+use NS boilerplate DATABASE boilerplate;
+SELECT * from user where username = /Register_Test_User.*/
+SELECT * from user where username = /Register_Test_User.*/;
+select * from user;
+select <-hasToken.in FROM user;
+exit

@@ -1,8 +1,8 @@
 import authConfig from "../../src/config/auth.config"
 import { AuthError, DatabaseError } from "../../src/errors"
 import { createTestUser } from "../data/api"
-import { createUser, getUser } from "../database/auth.database"
-import { apiDBSuccessTest, apiErrorTest, resetPassword, hash } from "../helpers"
+import { createUser, createUserToken, getUser } from "../database/auth.database"
+import { APIHelpers, apiDBSuccessTest, apiErrorTest, filterID, hash } from "../helpers"
 import { getDBDate } from "../helpers/date.helper"
 import { deleteAllUsersLike } from "../database/auth.database"
 
@@ -23,19 +23,20 @@ describe("Reset password", () => {
 	})
 
 	it("Successfully resets user's password", async () => {
-		const user = await createUser({
-			...resetPasswordUser.createArgs,
-			passwordResetToken: "TOKEN",
-			passwordResetTokenGeneratedAt: getDBDate()
+		const user = await createUser(resetPasswordUser.createArgs)
+		const resetPassToken = await createUserToken({
+			type: "password_reset",
+			expiresAt: getDBDate(Date.now() + (authConfig.passwordResetTimeoutMins * 1000 * 60)),
+			userId: user.id
 		})
 
 		const newPassword = "NEW_PASSWORD12"
 		const hashed = await hash(newPassword)
 
 		await apiDBSuccessTest({
-			apiPromise: resetPassword({
+			apiPromise: APIHelpers.resetPassword({
 				newPassword,
-				token: "TOKEN"
+				token: filterID(resetPassToken.id)
 			}),
 			dbGetter: () => getUser("username", user.username),
 			matchArgs: {...resetPasswordUser.matchArgs, passwordHash: hashed}
@@ -44,50 +45,47 @@ describe("Reset password", () => {
 	
 	
 	it("Works with a token just before expiry", async () => {
-		const genDate = new Date(Date.now() - (authConfig.passwordResetTimeoutMins * 1000 * 59))
-		const genAt = getDBDate(genDate)
-
-		const user = await createUser({
-			...resetPasswordUser.createArgs,
-			passwordResetToken: "TOKEN",
-			passwordResetTokenGeneratedAt: genAt
+		const user = await createUser(resetPasswordUser.createArgs)
+		const resetPassToken = await createUserToken({
+			type: "password_reset",
+			expiresAt: getDBDate(Date.now() + 1000 * 60 * 10),
+			userId: user.id
 		})
 
 		const newPassword = "NEW_PASSWORD12"
 		const hashed = await hash(newPassword)
 
 		await apiDBSuccessTest({
-			apiPromise: resetPassword({token: user.passwordResetToken!, newPassword}),
+			apiPromise: APIHelpers.resetPassword({token: filterID(resetPassToken.id), newPassword}),
 			dbGetter: () => getUser("username", user.username),
 			matchArgs: {...resetPasswordUser.matchArgs, passwordHash: hashed}
 		})
 	})
 	
 	it("Errors with the incorrect token", async () => {
-		await createUser({
-			...resetPasswordUser.createArgs,
-			passwordResetToken: "TOKEN",
-			passwordResetTokenGeneratedAt: getDBDate()
+		const user = await createUser(resetPasswordUser.createArgs)
+		await createUserToken({
+			type: "password_reset",
+			expiresAt: getDBDate(Date.now() + 1000 * 60 * 10),
+			userId: user.id
 		})
 
 		await apiErrorTest(
-			resetPassword({token: "WRONG_TOKEN", newPassword: "somePassworads213123"}),
+			APIHelpers.resetPassword({token: "WRONG_TOKEN", newPassword: "somePassworads213123"}),
 			DatabaseError.UserNotFound
 		)
 	})
 	
 	it("Errors with an expired token", async () => {
-		const genDate = new Date(Date.now() - (authConfig.passwordResetTimeoutMins * 1000 * 60))
-		const genAt = getDBDate(genDate)
-
-		const user = await createUser({
-			...resetPasswordUser.createArgs,
-			passwordResetToken: "TOKEN",
-			passwordResetTokenGeneratedAt: genAt
+		const user = await createUser(resetPasswordUser.createArgs)
+		const resetPassToken = await createUserToken({
+			type: "password_reset",
+			expiresAt: getDBDate(Date.now() - 1000 * 60 * 10),
+			userId: user.id
 		})
 
 		await apiErrorTest(
-			resetPassword({token: user.passwordResetToken!, newPassword: "Siuhasd879789"}),
+			APIHelpers.resetPassword({token: filterID(resetPassToken.id), newPassword: "Siuhasd879789"}),
 			AuthError.ExpiredPasswordRestToken
 		)
 	})

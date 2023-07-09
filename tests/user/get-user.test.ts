@@ -1,6 +1,6 @@
 import { createTestUser } from "../data/api"
 import { createUser } from "../database/auth.database"
-import { apiSuccessTest, checkObjMatchExclusive, getApiUser, omit } from "../helpers"
+import { APIHelpers, apiSuccessTest, checkObjMatchExclusive, omit } from "../helpers"
 import { createUserAccessToken } from "../helpers/token.helper"
 import { DB } from "../../src/types"
 import { deleteAllUsersLike } from "../database/auth.database"
@@ -32,7 +32,7 @@ describe("Get user", () => {
 		const token = await createUserAccessToken(user)
 
 		await apiSuccessTest({
-			apiPromise: getApiUser(user.userId, token.token),
+			apiPromise: APIHelpers.getUser(user.id, token.token),
 			apiDataGetter: (res) => res.data,
 			matchArgs: getUserUser.matchArgs
 		})
@@ -46,17 +46,17 @@ describe("Get user", () => {
 		const token2 = await createUserAccessToken(user2)
 
 		await apiSuccessTest({
-			apiPromise: getApiUser(user1.userId, token1.token),
+			apiPromise: APIHelpers.getUser(user1.id, token1.token),
 			apiDataGetter: (res) => res.data,
 			matchArgs: getUserUser.matchArgs
 		})
 
 		const otherUserRes = await apiSuccessTest({
-			apiPromise: getApiUser(user1.userId, token2.token)
+			apiPromise: APIHelpers.getUser(user1.id, token2.token)
 		})
 
 		checkObjMatchExclusive(
-			omit(otherUserRes.data, ["userId"]),
+			omit(otherUserRes.data, ["id"]),
 			getUserUser.otherMatchArgs
 		)
 	})
@@ -65,11 +65,11 @@ describe("Get user", () => {
 		const user1 = await createUser(getUserUser.createArgs)
 
 		const otherUserRes = await apiSuccessTest({
-			apiPromise: getApiUser(user1.userId)
+			apiPromise: APIHelpers.getUser(user1.id)
 		})
 
 		checkObjMatchExclusive(
-			omit(otherUserRes.data, ["userId"]),
+			omit(otherUserRes.data, ["id"]),
 			getUserUser.otherMatchArgs
 		)
 	})
@@ -81,7 +81,7 @@ describe("Get user", () => {
 		})
 
 		await apiSuccessTest({
-			apiPromise: getApiUser(user.userId, token.token),
+			apiPromise: APIHelpers.getUser(user.id, token.token),
 			apiDataGetter: (res) => res.data,
 			matchArgs: getUserUser.matchArgs
 		})

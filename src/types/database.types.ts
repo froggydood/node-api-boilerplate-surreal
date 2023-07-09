@@ -51,20 +51,23 @@ export namespace DB {
 		joinedAt: Generated <TimeStamp>,
 		userRole: Generated<UserRole>,
 		verified: Generated<DBBool>,
-		verificationToken: string | null,
-		verificationTokenGeneratedAt: TimeStamp | null,
-		passwordResetTokenGeneratedAt: TimeStamp | null,
-		passwordResetToken: string | null,
-		passwordResetTokenUsed: DBBool | null,
 		permissions: Generated<Permission[]>
 	}
 	export type User = RemoveKyselyTypes<DB_User>
 
+	export interface DB_HasToken {
+		id: Generated<string>,
+		in: string,
+		out: string
+	}
+	export type HasToken = RemoveKyselyTypes<DB_HasToken>
+
 	export interface DB_UserToken {
 		id: Generated<string>,
-		userId: SurrealRecord<DB.User, "id">,
-		token: Generated<string>,
 		createdAt: Generated<TimeStamp>,
-		type: string
+		type: TokenType,
+		expiresAt?: TimeStamp,
 	}
+	export type UserToken = RemoveKyselyTypes<DB_UserToken>
+	export type TokenType = "verification" | "password_reset"
 }

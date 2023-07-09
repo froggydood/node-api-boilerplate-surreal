@@ -12,15 +12,17 @@ DEFINE FIELD lastName ON user TYPE string ASSERT $value != NONE AND $value != NU
 
 DEFINE FIELD passwordHash ON user TYPE string ASSERT $value != NONE AND $value != NULL;
 DEFINE FIELD joinedAt ON user TYPE datetime VALUE time::now() ASSERT $value != NONE AND $value != NULL;
-DEFINE FIELD role ON user TYPE string VALUE "user" ASSERT $value != NONE AND $value != NULL;
-DEFINE FIELD verified ON user TYPE bool VALUE false ASSERT $value != NONE AND $value != NULL;
-DEFINE FIELD permissions ON user TYPE array VALUE [] ASSERT $value != NONE AND $value != NULL;
+DEFINE FIELD role ON user TYPE string VALUE $value OR "user" ASSERT $value != NONE AND $value != NULL;
+DEFINE FIELD verified ON user TYPE bool VALUE $value OR false ASSERT $value != NONE AND $value != NULL;
+DEFINE FIELD permissions ON user TYPE array VALUE $value OR [] ASSERT $value != NONE AND $value != NULL;
 DEFINE FIELD permissions.* ON user TYPE string ASSERT $value != NONE AND $value != NULL;
 
 DEFINE TABLE userToken SCHEMAFULL;
-DEFINE FIELD userId ON userToken TYPE record(user) ASSERT $value != NONE AND $value != NULL;
-DEFINE FIELD token ON userToken TYPE string VALUE rand::uuid() ASSERT $value != NONE AND $value != NULL;
-DEFINE FIELD createdAt ON userToken TYPE datetime VALUE time::now() ASSERT $value != NONE AND $value != NULL;
-DEFINE FIELD type ON userToken TYPE string ASSERT $value != NULL AND $value != NULL;
+DEFINE FIELD id ON userToken TYPE record(userToken) VALUE $value OR type::thing(userToken, rand::uuid()) ASSERT $value != NONE AND $value != NULL;
+DEFINE FIELD createdAt ON userToken TYPE datetime VALUE $value OR time::now() ASSERT $value != NONE AND $value != NULL;
+DEFINE FIELD expiresAt ON userToken TYPE datetime;
+DEFINE FIELD type ON userToken TYPE string ASSERT $value != NONE AND $value != NULL AND $value IN ["verification", "password_reset"];
+
+DEFINE TABLE hasToken SCHEMAFULL;
 
 COMMIT TRANSACTION;

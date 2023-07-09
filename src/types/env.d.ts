@@ -7,6 +7,7 @@ declare global {
 			DB_PASSWORD: string
 			DB_DATABASE: string
 			DB_NAMESPACE: string
+			DB_URL: string
 		
 			HASH_SALT: string
 			REDIS_HOST: string

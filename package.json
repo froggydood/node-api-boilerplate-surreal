@@ -22,6 +22,7 @@
 		"build-and-prod": "npm run build && npm run prod",
 		"migrate:add": "surrealx migrate add",
 		"migrate:up": "dotenv cross-env-shell \"surrealx migrate run --ns $DB_NAMESPACE --user $DB_USER --pass $DB_PASSWORD --db $DB_DATABASE --url $DB_URL\"",
+		"db:setup": "node scripts/setup-db.js",
 		"generate-types": "dotenv cross-env-shell \"surrealx generate --output ./src/types/gen.ts --ns $DB_NAMESPACE --user $DB_USER --pass $DB_PASSWORD --db $DB_DATABASE --url $DB_URL\""
 	},
 	"dependencies": {
