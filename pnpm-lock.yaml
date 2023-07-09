@@ -40,6 +40,7 @@ importers:
       koa-body: ^6.0.1
       koa-json: ^2.0.2
       koa-logger: ^3.2.1
+      kysely: ^0.26.1
       lint-staged: ^13.1.2
       nanoid: 2.1.11
       nodemon: ^2.0.20
@@ -71,6 +72,7 @@ importers:
       koa-body: 6.0.1
       koa-json: 2.0.2
       koa-logger: 3.2.1
+      kysely: 0.26.1
       nanoid: 2.1.11
       pg: 8.10.0
       redis: 4.6.5
@@ -4890,6 +4892,11 @@ packages:
       vary: 1.1.2
     transitivePeerDependencies:
       - supports-color
+    dev: false
+
+  /kysely/0.26.1:
+    resolution: {integrity: sha512-FVRomkdZofBu3O8SiwAOXrwbhPZZr8mBN5ZeUWyprH29jzvy6Inzqbd0IMmGxpd4rcOCL9HyyBNWBa8FBqDAdg==}
+    engines: {node: '>=14.0.0'}
     dev: false
 
   /lazy/1.0.11:

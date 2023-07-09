@@ -1,5 +1,4 @@
 import { Generated } from "kysely";
-import { SurrealRecord } from "kysely-surrealdb";
 
 export namespace DB {
 	export type Decimal = string;
