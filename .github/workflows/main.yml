@@ -46,6 +46,9 @@ jobs:
       - name: Test list dotenv cmd
         run: whereis dotenv
 
+      - name: Remove existing dotenv cmd
+        run: sudo rm -rf /usr/local/bin/dotenv
+
       - name: Start containers
         run: npm run docker:ci
 
