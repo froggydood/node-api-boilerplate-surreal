@@ -8,7 +8,7 @@
 		"docker:dev-rebuild": "dotenv \"docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build --no-deps\"",
 		"docker:dev-rebuild-db": "dotenv \"docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build --force-recreate database --no-deps\"",
 		"docker:dev-rebuild-migration": "dotenv \"docker-compose -f docker-compose.yml -f docker-compose.dev.yml up --build --force-recreate migration --no-deps\"",
-		"docker:ci": "dotenv \"docker-compose -f docker-compose.yml -f docker-compose.ci.yml up --build --no-deps\"",
+		"docker:ci": "dotenv \"docker-compose -f docker-compose.yml -f docker-compose.ci.yml up --build --no-deps -d\"",
 		"docker:ci-down": "dotenv \"docker-compose -f docker-compose.yml -f docker-compose.ci.yml down\"",
 		"docker:prod": "dotenv \"docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d\"",
 		"docker:prod-down": "dotenv \"docker-compose -f docker-compose.yml -f docker-compose.prod.yml down\"",
