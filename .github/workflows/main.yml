@@ -42,10 +42,6 @@ jobs:
       - name: Set node_module permissions
         run: chmod 777 -R ./node_modules
 
-      # TEST COMMAND
-      - name: Test list dotenv cmd
-        run: whereis dotenv
-
       - name: Start containers
         run: npm run docker:ci
 
