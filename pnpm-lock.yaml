@@ -28,7 +28,6 @@ importers:
       db-migrate: ^0.11.13
       db-migrate-pg: ^1.2.2
       dotenv: ^16.0.3
-      dotenv-cli: ^7.2.1
       dotenv-parse-variables: ^2.0.0
       esbuild: ^0.17.10
       eslint: ^8.34.0
@@ -67,7 +66,6 @@ importers:
       cross-env: 7.0.3
       dayjs: 1.11.7
       db-migrate-pg: 1.2.2
-      dotenv-cli: 7.2.1
       form-data: 4.0.0
       formidable: 2.1.1
       jsonwebtoken: 9.0.0
@@ -3327,21 +3325,6 @@ packages:
       esutils: 2.0.3
     dev: true
 
-  /dotenv-cli/7.2.1:
-    resolution: {integrity: sha512-ODHbGTskqRtXAzZapDPvgNuDVQApu4oKX8lZW7Y0+9hKA6le1ZJlyRS687oU9FXjOVEDU/VFV6zI125HzhM1UQ==}
-    hasBin: true
-    dependencies:
-      cross-spawn: 7.0.3
-      dotenv: 16.0.3
-      dotenv-expand: 10.0.0
-      minimist: 1.2.8
-    dev: false
-
-  /dotenv-expand/10.0.0:
-    resolution: {integrity: sha512-GopVGCpVS1UKH75VKHGuQFqS1Gusej0z4FyQkPdwjil2gNIv+LNsqBlboOzpJFZKVT95GkCyWJbBSdFEFUWI2A==}
-    engines: {node: '>=12'}
-    dev: false
-
   /dotenv-parse-variables/2.0.0:
     resolution: {integrity: sha512-/Tezlx6xpDqR6zKg1V4vLCeQtHWiELhWoBz5A/E0+A1lXN9iIkNbbfc4THSymS0LQUo8F1PMiIwVG8ai/HrnSA==}
     engines: {node: '>= 8.3.0'}
@@ -3355,6 +3338,7 @@ packages:
   /dotenv/16.0.3:
     resolution: {integrity: sha512-7GO6HghkA5fYG9TYnNxi14/7K9f5occMlp3zXAuSxn7CKCxt9xbNWG7yF8hTCSUchlfWSe3uLmlPfigevRItzQ==}
     engines: {node: '>=12'}
+    dev: true
 
   /dotenv/5.0.1:
     resolution: {integrity: sha512-4As8uPrjfwb7VXC+WnLCbXK7y+Ueb2B3zgNCePYfhxS1PYeaO1YTeplffTEcbfLhvFNGLAz90VvJs9yomG7bow==}
@@ -5153,6 +5137,7 @@ packages:
 
   /minimist/1.2.8:
     resolution: {integrity: sha512-2yyAR8qBkN3YuheJanUpWC5U3bb5osDywNB8RzDVlDwDHbocAJveqqj1u8+SVD7jkWT4yvsHCpWqqWqAxb0zCA==}
+    dev: true
 
   /minipass/3.3.6:
     resolution: {integrity: sha512-DxiNidxSEK+tHG6zOIklvNOwm3hvCrbUrdtzY74U6HKTJxvIDfOUL5W5P2Ghd3DTkhhKPYGqeNUIh5qcM4YBfw==}
