@@ -40,8 +40,6 @@ importers:
       koa-body: ^6.0.1
       koa-json: ^2.0.2
       koa-logger: ^3.2.1
-      kysely: ^0.24.2
-      kysely-surrealdb: ^0.7.4
       lint-staged: ^13.1.2
       nanoid: 2.1.11
       nodemon: ^2.0.20
@@ -73,8 +71,6 @@ importers:
       koa-body: 6.0.1
       koa-json: 2.0.2
       koa-logger: 3.2.1
-      kysely: 0.24.2
-      kysely-surrealdb: 0.7.4_kysely@0.24.2+surrealdb.js@0.8.2
       nanoid: 2.1.11
       pg: 8.10.0
       redis: 4.6.5
@@ -4894,24 +4890,6 @@ packages:
       vary: 1.1.2
     transitivePeerDependencies:
       - supports-color
-    dev: false
-
-  /kysely-surrealdb/0.7.4_kysely@0.24.2+surrealdb.js@0.8.2:
-    resolution: {integrity: sha512-Y5RaVcumJA6ZR2dDvNCBqKE0owvQqcfbm91N8q/c0rCs8xG7qMOA3otQRvp2yJpm33f02g98Na7BG8E4QgB60A==}
-    peerDependencies:
-      kysely: '>= 0.24.2 < 1'
-      surrealdb.js: ^0.7.3
-    peerDependenciesMeta:
-      surrealdb.js:
-        optional: true
-    dependencies:
-      kysely: 0.24.2
-      surrealdb.js: 0.8.2
-    dev: false
-
-  /kysely/0.24.2:
-    resolution: {integrity: sha512-+7eaTJNUYm2yRq1x+lEOZc+78TO35dTZ9b0dh49+Z9CTt2byMSbMiOKpwPlOyCAaHD4kILkAYWYZNywFlmBwRA==}
-    engines: {node: '>=14.0.0'}
     dev: false
 
   /lazy/1.0.11:

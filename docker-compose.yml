@@ -20,7 +20,7 @@ services:
       - database
   
   database:
-    image: surrealdb/surrealdb:nightly
+    image: surrealdb/surrealdb:1.0.0-beta.9-20230402
     container_name: node-api-boilerplate-surreal-database
     command:
       - start
