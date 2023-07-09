@@ -16,3 +16,4 @@ RUN chmod +x ./scripts/wait-migrate.sh
 
 RUN npm i -g pnpm@6.31.0
 RUN pnpm i
+RUN pnpm i -g dotenv-cli
