@@ -23,7 +23,7 @@ jobs:
             -H "Authorization: Bearer ${{secrets.ACCESS_TOKEN_GITHUB}}"\
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/${{vars.OWNER}}/${{vars.REPO}}/statuses/${{github.sha}} \
-            -d '{"state": "failure", "description": "The build and test action failed", "context": "ci"}'
+            -d '{"state": "failure", "description": "The build and test action failed", "context": "main"}'
 
       - name: Inject env variables
         run: |
@@ -63,7 +63,7 @@ jobs:
             -H "Authorization: Bearer ${{secrets.ACCESS_TOKEN_GITHUB}}"\
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/${{vars.OWNER}}/${{vars.REPO}}/statuses/${{github.sha}} \
-            -d '{"state": "success", "description": "The build and test action passed", "context": "ci"}'
+            -d '{"state": "success", "description": "The build and test action passed", "context": "main"}'
       
       - name: Set status to failed
         if: ${{ failure() }}
@@ -74,7 +74,7 @@ jobs:
             -H "Authorization: Bearer ${{secrets.ACCESS_TOKEN_GITHUB}}"\
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/${{vars.OWNER}}/${{vars.REPO}}/statuses/${{github.sha}} \
-            -d '{"state": "failure", "description": "The build and test action failed", "context": "ci"}'
+            -d '{"state": "failure", "description": "The build and test action failed", "context": "main"}'
 
             
       - name: Set status to cancelled
@@ -86,4 +86,4 @@ jobs:
             -H "Authorization: Bearer ${{secrets.ACCESS_TOKEN_GITHUB}}"\
             -H "X-GitHub-Api-Version: 2022-11-28" \
             https://api.github.com/repos/${{vars.OWNER}}/${{vars.REPO}}/statuses/${{github.sha}} \
-            -d '{"state": "error", "description": "The build and test action was cancelled", "context": "ci"}'
+            -d '{"state": "error", "description": "The build and test action was cancelled", "context": "main"}'
